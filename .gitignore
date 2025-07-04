@@ -95,3 +95,6 @@ Thumbs.db
 
 # Docker
 .dockerignore
+
+# LLM support files
+.claude/
