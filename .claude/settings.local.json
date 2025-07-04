@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(chmod:*)",
+      "Bash(grep:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(time curl:*)",
+      "Bash(timeout:*)"
+    ],
+    "deny": []
+  }
+}
