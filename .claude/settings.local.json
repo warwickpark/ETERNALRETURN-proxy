@@ -10,7 +10,12 @@
       "Bash(docker logs:*)",
       "Bash(docker exec:*)",
       "Bash(time curl:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(./test_validation.sh:*)",
+      "Bash(pkill:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(tree:*)"
     ],
     "deny": []
   }

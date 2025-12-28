@@ -194,24 +194,24 @@ class BserApiService {
     return this.makeRequest(endpoint);
   }
 
-  async getUserRank(userNum, seasonId, matchingTeamMode) {
-    return this.makeRequest(`v1/rank/${userNum}/${seasonId}/${matchingTeamMode}`);
+  async getUserRank(userId, seasonId, matchingTeamMode) {
+    return this.makeRequest(`v1/rank/uid/${userId}/${seasonId}/${matchingTeamMode}`);
   }
 
-  async getUnionTeam(userNum, seasonId) {
-    return this.makeRequest(`v1/unionTeam/${userNum}/${seasonId}`);
+  async getUnionTeam(userId, seasonId) {
+    return this.makeRequest(`v1/unionTeam/uid/${userId}/${seasonId}`);
   }
 
-  async getUserStats(userNum, seasonId, matchingMode = null) {
-    const endpoint = matchingMode 
-      ? `v1/user/stats/${userNum}/${seasonId}/${matchingMode}`
-      : `v1/user/stats/${userNum}/${seasonId}`;
-    
+  async getUserStats(userId, seasonId, matchingMode = null) {
+    const endpoint = matchingMode
+      ? `v1/user/stats/uid/${userId}/${seasonId}/${matchingMode}`
+      : `v1/user/stats/uid/${userId}/${seasonId}`;
+
     return this.makeRequest(endpoint);
   }
 
-  async getUserGames(userNum) {
-    return this.makeRequest(`v1/user/games/${userNum}`);
+  async getUserGames(userId) {
+    return this.makeRequest(`v1/user/games/uid/${userId}`);
   }
 
   async getGameResult(gameId) {

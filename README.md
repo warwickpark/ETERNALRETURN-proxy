@@ -4,6 +4,10 @@
 
 Black Survival: Eternal Return 게임 데이터를 빠르고 안정적으로 제공하는 프록시 서비스입니다.
 
+> ⚠️ **중요 알림 (2025-12-29)**
+> BSER Open API가 userId 기반 시스템으로 변경되었습니다. 자세한 내용은 [VALIDATION_REPORT.md](./VALIDATION_REPORT.md)를 참조하세요.
+> 기존 `userNum` 파라미터를 사용하는 엔드포인트는 더 이상 작동하지 않습니다.
+
 ## ✨ 주요 특징
 
 - 🚀 **초고속 응답**: 캐시를 통한 밀리초 단위 응답 시간
@@ -47,13 +51,15 @@ curl "https://your-domain.com/health"
 ```json
 {
   "code": 200,
-  "message": "Success", 
+  "message": "Success",
   "user": {
-    "userNum": 431380,
-    "nickname": "kimint"
+    "nickname": "kimint",
+    "userId": "w8UmiFdu3UO7cKWMWEJGUhUzBay2O3R53qS1bdlAmc5lLR__nkYwoVU"
   }
 }
 ```
+
+> **변경 사항**: `userNum` 필드가 `userId` (문자열)로 변경되었습니다.
 
 ## 📚 API 문서
 
@@ -62,16 +68,29 @@ curl "https://your-domain.com/health"
 
 ### 🔗 주요 엔드포인트
 
-| 엔드포인트 | 설명 | 예시 |
+> ⚠️ **API 변경 알림**: 2025년 12월부터 `userId` 기반 엔드포인트로 변경되었습니다.
+
+| 엔드포인트 | 설명 | 상태 |
 |------------|------|------|
-| `GET /user/nickname?nickname={name}` | 유저 정보 조회 | `/user/nickname?nickname=kimint` |
-| `GET /v1/rank/top/{season}/{mode}` | 상위 랭커 | `/v1/rank/top/3/1` |
-| `GET /rank/{userNum}/{season}/{mode}` | 유저 랭킹 | `/rank/431380/3/1` |
-| `GET /user/stats/{userNum}/{season}` | 유저 통계 | `/user/stats/431380/3` |
-| `GET /user/games/{userNum}` | 게임 기록 | `/user/games/431380` |
-| `GET /v2/data/{type}` | 메타 데이터 | `/v2/data/Character` |
-| `GET /health` | 서비스 상태 | `/health` |
-| `GET /stats` | 시스템 통계 | `/stats` |
+| `GET /user/nickname?nickname={name}` | 유저 정보 조회 (userId 획득) | ✅ 정상 |
+| `GET /v1/rank/top/{season}/{mode}` | 상위 랭커 | ✅ 정상 |
+| `GET /rank/uid/{userId}/{season}/{mode}` | 유저 랭킹 (v2.0 신규) | ✅ 정상 |
+| `GET /user/stats/uid/{userId}/{season}` | 유저 통계 (v2.0 신규) | ✅ 정상 |
+| `GET /user/games/uid/{userId}` | 게임 기록 (v2.0 신규) | ✅ 정상 |
+| `GET /unionTeam/uid/{userId}/{season}` | 유니온 팀 정보 (v2.0 신규) | ✅ 정상 |
+| `GET /v2/data/{type}` | 메타 데이터 | ✅ 정상 |
+| `GET /health` | 서비스 상태 | ✅ 정상 |
+| `GET /stats` | 시스템 통계 | ✅ 정상 |
+
+**사용 예시**:
+```bash
+# 1. 닉네임으로 userId 조회
+curl "/user/nickname?nickname=kimint"
+# 응답: {"user": {"userId": "w8UmiFdu3UO7cK..."}}
+
+# 2. userId로 랭킹 조회
+curl "/rank/uid/w8UmiFdu3UO7cKWMWEJGUhUzBay2O3R53qS1bdlAmc5lLR__nkYwoVU/3/1"
+```
 
 ### ⚡ 성능 지표
 
@@ -186,26 +205,28 @@ import requests
 class BSERClient:
     def __init__(self, base_url="https://your-domain.com"):
         self.base_url = base_url
-    
+
     def get_user_stats(self, nickname):
-        # 유저 번호 조회
+        # userId 조회
         user_data = requests.get(
             f"{self.base_url}/user/nickname",
             params={"nickname": nickname}
         ).json()
-        
+
         if user_data["code"] != 200:
             return None
-            
-        user_num = user_data["user"]["userNum"]
-        
-        # 통계 조회
+
+        user_id = user_data["user"]["userId"]
+
+        # 통계 조회 (새로운 API 형식)
         stats = requests.get(
-            f"{self.base_url}/user/stats/{user_num}/3"
+            f"{self.base_url}/user/stats/uid/{user_id}/3"
         ).json()
-        
+
         return stats
 ```
+
+> **변경 사항**: `userNum` → `userId` 사용, 엔드포인트에 `uid/` 프리픽스 추가
 
 ## ❓ 자주 묻는 질문
 
@@ -223,6 +244,18 @@ A: 네. 응답 형식과 데이터 구조가 100% 동일합니다.
 
 ### Q: 어떤 언어를 지원하나요?
 A: 한국어, 영어, 일본어, 중국어(간체/번체), 프랑스어, 독일어, 러시아어 등 15개 언어를 지원합니다.
+
+### Q: userNum과 userId의 차이는 무엇인가요?
+A: BSER API가 2025년 12월에 업데이트되면서 `userNum` (숫자)에서 `userId` (문자열)로 변경되었습니다.
+- **userNum**: 기존 방식, 더 이상 지원 안 됨 (401 Unauthorized)
+- **userId**: 새로운 방식, Base64 형식의 문자열 (약 55자)
+- userId는 `/user/nickname` API를 통해 획득할 수 있습니다.
+
+### Q: 기존 코드를 어떻게 마이그레이션하나요?
+A: 자세한 마이그레이션 가이드는 [VALIDATION_REPORT.md](./VALIDATION_REPORT.md)를 참조하세요. 주요 변경사항:
+1. 엔드포인트 경로에 `uid/` 추가
+2. 파라미터 타입 변경 (숫자 → 문자열)
+3. userId 획득 로직 추가
 
 ## 🔧 기술 스택
 
@@ -277,6 +310,12 @@ ab -n 1000 -c 20 https://your-domain.com/health
 - **기능 제안**: Pull Request 환영
 - **문서 개선**: 오타 수정, 예시 추가 등
 
+## 📋 추가 문서
+
+- **[VALIDATION_REPORT.md](./VALIDATION_REPORT.md)** - BSER API 변경 사항 검증 보고서
+- **[API_REFERENCE.md](./API_REFERENCE.md)** - 완전한 API 레퍼런스
+- **[SECURITY.md](./SECURITY.md)** - 보안 정책 및 가이드
+
 ## 📄 라이선스
 
 MIT License - 자유롭게 사용, 수정, 배포 가능
@@ -284,3 +323,5 @@ MIT License - 자유롭게 사용, 수정, 배포 가능
 ---
 
 **🎯 BSER Cache Proxy로 더 빠르고 안정적인 게임 데이터 서비스를 경험하세요!**
+
+> **마지막 업데이트**: 2025-12-29 - BSER API userId 변경 사항 반영
