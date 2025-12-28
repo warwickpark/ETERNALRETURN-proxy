@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bserApi = require('../services/bserApi');
 const validation = require('../middleware/validation');
+const logger = require('../utils/logger');
 
 // 유저 닉네임으로 정보 조회
 router.get('/user/nickname', validation.validateNickname, async (req, res, next) => {
@@ -45,7 +46,23 @@ router.get('/v2/rank/top/:seasonId/:serverCode/:matchingTeamMode',
   }
 );
 
-// 유저 랭크 조회
+// 유저 랭크 조회 (신규 - userId 기반)
+router.get('/rank/uid/:userId/:seasonId/:matchingTeamMode',
+  validation.validateUserId,
+  validation.validateSeasonId,
+  validation.validateMatchingTeamMode,
+  async (req, res, next) => {
+    try {
+      const { userId, seasonId, matchingTeamMode } = req.params;
+      const result = await bserApi.getUserRank(userId, seasonId, matchingTeamMode);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 유저 랭크 조회 (기존 - userNum 기반, DEPRECATED)
 router.get('/rank/:userNum/:seasonId/:matchingTeamMode',
   validation.validateUserNum,
   validation.validateSeasonId,
@@ -53,7 +70,36 @@ router.get('/rank/:userNum/:seasonId/:matchingTeamMode',
   async (req, res, next) => {
     try {
       const { userNum, seasonId, matchingTeamMode } = req.params;
-      const result = await bserApi.getUserRank(userNum, seasonId, matchingTeamMode);
+
+      // Deprecation 경고
+      logger.warn(`DEPRECATED: /rank/${userNum}/... endpoint used. This endpoint is deprecated. Please use /rank/uid/{userId}/... instead.`);
+      res.setHeader('X-API-Deprecated', 'true');
+      res.setHeader('X-API-Deprecation-Message', 'This endpoint is deprecated. Use /rank/uid/{userId} instead. BSER API no longer supports userNum-based queries.');
+
+      // 에러 응답: userNum은 더 이상 지원되지 않음
+      return res.status(400).json({
+        code: 400,
+        message: 'userNum-based API is no longer supported by BSER. Please use /user/nickname to get userId first, then use /rank/uid/{userId} endpoint.',
+        error: 'DEPRECATED_ENDPOINT',
+        migration: {
+          step1: 'GET /user/nickname?nickname={nickname} to get userId',
+          step2: 'Use userId in /rank/uid/{userId}/{seasonId}/{matchingTeamMode}'
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 유니온 팀 정보 조회 (신규 - userId 기반)
+router.get('/unionTeam/uid/:userId/:seasonId',
+  validation.validateUserId,
+  validation.validateSeasonId,
+  async (req, res, next) => {
+    try {
+      const { userId, seasonId } = req.params;
+      const result = await bserApi.getUnionTeam(userId, seasonId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -61,14 +107,35 @@ router.get('/rank/:userNum/:seasonId/:matchingTeamMode',
   }
 );
 
-// 유니온 팀 정보 조회
+// 유니온 팀 정보 조회 (기존 - DEPRECATED)
 router.get('/unionTeam/:userNum/:seasonId',
   validation.validateUserNum,
   validation.validateSeasonId,
   async (req, res, next) => {
     try {
       const { userNum, seasonId } = req.params;
-      const result = await bserApi.getUnionTeam(userNum, seasonId);
+      logger.warn(`DEPRECATED: /unionTeam/${userNum}/... endpoint used`);
+      res.setHeader('X-API-Deprecated', 'true');
+
+      return res.status(400).json({
+        code: 400,
+        message: 'userNum-based API is no longer supported. Use /unionTeam/uid/{userId}/{seasonId} instead.',
+        error: 'DEPRECATED_ENDPOINT'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 유저 통계 조회 (신규 - userId 기반, V1)
+router.get('/user/stats/uid/:userId/:seasonId',
+  validation.validateUserId,
+  validation.validateSeasonId,
+  async (req, res, next) => {
+    try {
+      const { userId, seasonId } = req.params;
+      const result = await bserApi.getUserStats(userId, seasonId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -76,22 +143,44 @@ router.get('/unionTeam/:userNum/:seasonId',
   }
 );
 
-// 유저 통계 조회 (V1)
+// 유저 통계 조회 (신규 - userId 기반, V2)
+router.get('/user/stats/uid/:userId/:seasonId/:matchingMode',
+  validation.validateUserId,
+  validation.validateSeasonId,
+  validation.validateMatchingMode,
+  async (req, res, next) => {
+    try {
+      const { userId, seasonId, matchingMode } = req.params;
+      const result = await bserApi.getUserStats(userId, seasonId, matchingMode);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 유저 통계 조회 (기존 - DEPRECATED, V1)
 router.get('/user/stats/:userNum/:seasonId',
   validation.validateUserNum,
   validation.validateSeasonId,
   async (req, res, next) => {
     try {
       const { userNum, seasonId } = req.params;
-      const result = await bserApi.getUserStats(userNum, seasonId);
-      res.json(result);
+      logger.warn(`DEPRECATED: /user/stats/${userNum}/... endpoint used`);
+      res.setHeader('X-API-Deprecated', 'true');
+
+      return res.status(400).json({
+        code: 400,
+        message: 'userNum-based API is no longer supported. Use /user/stats/uid/{userId}/{seasonId} instead.',
+        error: 'DEPRECATED_ENDPOINT'
+      });
     } catch (error) {
       next(error);
     }
   }
 );
 
-// 유저 통계 조회 (V2)
+// 유저 통계 조회 (기존 - DEPRECATED, V2)
 router.get('/user/stats/:userNum/:seasonId/:matchingMode',
   validation.validateUserNum,
   validation.validateSeasonId,
@@ -99,7 +188,27 @@ router.get('/user/stats/:userNum/:seasonId/:matchingMode',
   async (req, res, next) => {
     try {
       const { userNum, seasonId, matchingMode } = req.params;
-      const result = await bserApi.getUserStats(userNum, seasonId, matchingMode);
+      logger.warn(`DEPRECATED: /user/stats/${userNum}/... endpoint used`);
+      res.setHeader('X-API-Deprecated', 'true');
+
+      return res.status(400).json({
+        code: 400,
+        message: 'userNum-based API is no longer supported. Use /user/stats/uid/{userId}/{seasonId}/{matchingMode} instead.',
+        error: 'DEPRECATED_ENDPOINT'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 유저 게임 기록 조회 (신규 - userId 기반)
+router.get('/user/games/uid/:userId',
+  validation.validateUserId,
+  async (req, res, next) => {
+    try {
+      const { userId } = req.params;
+      const result = await bserApi.getUserGames(userId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -107,14 +216,20 @@ router.get('/user/stats/:userNum/:seasonId/:matchingMode',
   }
 );
 
-// 유저 게임 기록 조회
+// 유저 게임 기록 조회 (기존 - DEPRECATED)
 router.get('/user/games/:userNum',
   validation.validateUserNum,
   async (req, res, next) => {
     try {
       const { userNum } = req.params;
-      const result = await bserApi.getUserGames(userNum);
-      res.json(result);
+      logger.warn(`DEPRECATED: /user/games/${userNum} endpoint used`);
+      res.setHeader('X-API-Deprecated', 'true');
+
+      return res.status(400).json({
+        code: 400,
+        message: 'userNum-based API is no longer supported. Use /user/games/uid/{userId} instead.',
+        error: 'DEPRECATED_ENDPOINT'
+      });
     } catch (error) {
       next(error);
     }

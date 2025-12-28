@@ -22,7 +22,7 @@ const validateNickname = (req, res, next) => {
 
 const validateUserNum = (req, res, next) => {
   const { userNum } = req.params;
-  
+
   if (!userNum || isNaN(userNum)) {
     return res.status(400).json({
       code: 400,
@@ -32,6 +32,37 @@ const validateUserNum = (req, res, next) => {
   }
 
   req.params.userNum = parseInt(userNum);
+  next();
+};
+
+const validateUserId = (req, res, next) => {
+  const { userId } = req.params;
+
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({
+      code: 400,
+      message: 'Valid user ID is required',
+      error: 'VALIDATION_ERROR'
+    });
+  }
+
+  // userId 형식 검증 (Base64 URL-safe 문자열)
+  if (userId.length < 20 || userId.length > 100) {
+    return res.status(400).json({
+      code: 400,
+      message: 'User ID must be between 20 and 100 characters',
+      error: 'VALIDATION_ERROR'
+    });
+  }
+
+  if (!/^[A-Za-z0-9_-]+$/.test(userId)) {
+    return res.status(400).json({
+      code: 400,
+      message: 'User ID contains invalid characters',
+      error: 'VALIDATION_ERROR'
+    });
+  }
+
   next();
 };
 
@@ -189,6 +220,7 @@ const validateRouteId = (req, res, next) => {
 module.exports = {
   validateNickname,
   validateUserNum,
+  validateUserId,
   validateSeasonId,
   validateMatchingTeamMode,
   validateMatchingMode,
