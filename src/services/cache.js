@@ -42,11 +42,24 @@ class CacheService {
   }
 
   generateKey(endpoint, params = {}) {
-    const sortedParams = Object.keys(params)
+    // query 파라미터가 객체인 경우 평탄화
+    let flatParams = {};
+    if (params.query && typeof params.query === 'object') {
+      flatParams = { ...params.query };
+    } else {
+      flatParams = { ...params };
+    }
+
+    const sortedParams = Object.keys(flatParams)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map(key => {
+        const value = flatParams[key];
+        // 값이 객체나 배열인 경우 JSON 문자열화
+        const stringValue = typeof value === 'object' ? JSON.stringify(value) : value;
+        return `${key}=${stringValue}`;
+      })
       .join('&');
-    
+
     return `bser:${endpoint}:${sortedParams}`;
   }
 
