@@ -51,7 +51,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"  # 로컬호스트만 바인딩
+      - "127.0.0.1:3001:3000"  # 로컬호스트만 바인딩
     env_file:
       - .env
     environment:
