@@ -93,34 +93,6 @@ services:
         soft: 20000
         hard: 40000
 
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-      - ./logs/nginx:/var/log/nginx
-    depends_on:
-      - bser-cache-proxy
-    networks:
-      - bser-network-internal
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - SETGID
-      - SETUID
-      - CHOWN
-      - DAC_OVERRIDE
-    read_only: true
-    tmpfs:
-      - /var/cache/nginx:noexec,nosuid,size=100m
-      - /var/run:noexec,nosuid,size=100m
-
 volumes:
   redis_data:
     driver: local
@@ -132,6 +104,3 @@ volumes:
 networks:
   bser-network-internal:
     driver: bridge
-    internal: true
-    driver_opts:
-      com.docker.network.bridge.name: bser-br0
